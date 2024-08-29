@@ -4,7 +4,10 @@
 // https://tendermint.com/static/docs/tendermint.pdf
 package tendermint
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // timeout constnats.
 // The timeouts prevent the algorithm from blocking and waiting forever for some condition to be true, ensure that processes continuously transition between rounds, and guarantee that eventually (after GST) communication between correct processes is timely and reliable so they can decide
@@ -56,22 +59,6 @@ type commitMsg struct {
 	sender int
 }
 
-func process() {
-}
-
-func process_startRound() {
-	// Propose
-	// schedule a timeout for the propose message
-}
-
-func upon_proposal() {
-	// broacast prevote for the current locked value or nil
-}
-
-func upon_proposalAndPrevote() {
-	// send prevote
-}
-
 //
 // Pre-vote: Validators broadcast their votes for a proposed block. If a block is proposed and receives more than two-thirds of the votes, it moves to the next round.
 //
@@ -80,7 +67,15 @@ func upon_proposalAndPrevote() {
 // Commit: If a block receives enough pre-commits, it's committed as the finalized block. If it fails, the process restarts.
 //
 
-func tm_run_rounds(validatorId int, rounds int) {
+const (
+	ROUND_STATE_PROPOSE = iota
+	ROUND_STATE_VOTE
+	ROUND_STATE_PRECOMMIT
+)
+
+type RoundState = int
+
+func tm_run_rounds(validatorId int, rounds int, network Network) {
 	height := 0
 	round := 0
 
@@ -90,8 +85,33 @@ func tm_run_rounds(validatorId int, rounds int) {
 		validatorsSet = append(validatorsSet, i)
 	}
 
+	roundState := ROUND_STATE_PROPOSE
 	for {
-		proposer := getProposerForRound(round, validatorsSet)
+		if roundState == ROUND_STATE_PROPOSE {
+			// Select proposer.
+			proposer := getProposerForRound(round, validatorsSet)
+
+			// If we are proposer, send proposal.
+			if proposer == validatorId {
+				proposal := proposalMsg{
+					value:  *getValue(),
+					sender: validatorId,
+				}
+				// Broadcast proposal.
+				network.broadcast(proposal)
+			}
+
+			// Wait for proposal.
+			time.Sleep(proposeTimeout)
+		}
+		if roundState == ROUND_STATE_VOTE {
+			// Get proposal ID.
+			// Decide whether to vote or not.
+		}
+		if roundState == ROUND_STATE_PRECOMMIT {
+
+		}
+
 		fmt.Printf("h=%d r=%d proposer=%d\n", height, round, proposer)
 
 		round++
@@ -104,7 +124,7 @@ func tm_run_rounds(validatorId int, rounds int) {
 }
 
 type Network interface {
-	send(msg interface{})
+	broadcast(msg interface{})
 	recv() interface{}
 }
 
