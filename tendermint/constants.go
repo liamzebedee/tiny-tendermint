@@ -10,9 +10,9 @@ const (
 )
 
 const (
-	ROUND_STATE_PROPOSE = iota
-	ROUND_STATE_VOTE
-	ROUND_STATE_PRECOMMIT
+	STEP_PROPOSE = iota
+	STEP_VOTE
+	STEP_PRECOMMIT
 )
 
 type RoundState = int
