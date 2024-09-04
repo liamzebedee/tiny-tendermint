@@ -6,10 +6,16 @@ type proposalMsg struct {
 }
 
 type voteMsg struct {
+	value  int // TODO change to pointer (ie. hash)
+	height int
+	round  int
 	sender int
 }
 
 type commitMsg struct {
+	value  int // TODO change to pointer (ie. hash)
+	height int
+	round  int
 	sender int
 }
 
@@ -22,7 +28,6 @@ type commitMsg struct {
 //
 
 func tendermint_run() {
-
 	// setup network
 	// setup 4 processes each with network
 	// go process.run()
@@ -38,5 +43,4 @@ func tendermint_run() {
 	// each round we do timeouts
 	// and the timeouts are pure functions of the (height, round)
 	// where the timeouts reset for each height, but increase in the face of no progress (increasing round id)
-
 }

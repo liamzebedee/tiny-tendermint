@@ -57,20 +57,103 @@ func isValidProposal(p proposalMsg) bool {
 	return true
 }
 
+func getProposerForRound(round int, validatorSet []int) int {
+	return validatorSet[round%len(validatorSet)]
+}
+
+func (p *Process) awaitProposal(
+	proposalMsgs <-chan proposalMsg,
+) {
+}
+
+func (p *Process) voteProposal(
+	round int,
+	proposal *proposalMsg,
+) {
+	vote := voteMsg{
+		value:  -1,
+		height: p.height,
+		round:  round,
+		sender: p.id,
+	}
+	if proposal != nil && isValidProposal(*proposal) {
+		vote.value = proposal.value
+	}
+	go func() {
+		for _, peer := range p.peers {
+			peer.SendVote(vote, p.id)
+		}
+	}()
+}
+
+func (p *Process) commitProposal(
+	round int,
+	value *int,
+) {
+	vote := commitMsg{
+		value:  -1,
+		height: p.height,
+		round:  round,
+		sender: p.id,
+	}
+	if value != nil {
+		vote.value = *value
+	}
+	go func() {
+		for _, peer := range p.peers {
+			peer.SendCommit(vote, p.id)
+		}
+	}()
+}
+
+func (p *Process) awaitVotes(
+	voteMsgs <-chan voteMsg,
+) {
+}
+
+func (p *Process) awaitVoteMajority() {
+	// if vote.value != proposal.value {
+	// 	// ignore.
+	// 	continue
+	// }
+
+	// votes = append(votes, vote)
+	// if majority == len(votes) {
+	// 	break
+	// }
+}
+
+func (p *Process) awaitCommitMajority(
+	commitMajorityCh <-chan bool,
+) {
+	// if commit.value != proposal.value {
+	// 	// ignore.
+	// 	continue
+	// }
+
+	// precommits = append(precommits, commit)
+	// if majority == len(precommits) {
+	// 	break
+	// }
+}
+
 func (p *Process) StartRound(round int) {
 	validatorSet := []int{0, 1, 2, 3}
-	F := len(validatorSet)
-	majority := 2*F + 1
+	// F := len(validatorSet)
+	// majority := 2*F + 1
 
 	proposalMsgs := make(chan proposalMsg)
 	timeoutPropose := make(chan bool)
 
 	voteMsgs := make(chan voteMsg)
-	votes := []voteMsg{}
+	var preparedValue *int
+	preparedValueChan := make(chan *int)
+	// votes := []voteMsg{}
 	timeoutVote := make(chan bool)
 
-	precommitMsgs := make(chan commitMsg)
-	precommits := []commitMsg{}
+	// precommitMsgs := make(chan commitMsg)
+	// precommits := []commitMsg{}
+	commitMajorityCh := make(chan bool)
 	timeoutCommit := make(chan bool)
 
 	// NEW HEIGHT.
@@ -78,7 +161,7 @@ func (p *Process) StartRound(round int) {
 
 	if proposer := getProposerForRound(round, validatorSet); proposer == p.id {
 		proposal := proposalMsg{
-			round: round,
+			value: int(time.Now().UnixMilli()),
 		}
 
 		// 1. Get the value to propose.
@@ -97,43 +180,54 @@ func (p *Process) StartRound(round int) {
 
 	// PROPOSE.
 	//////////////////////////////////////////
+
+	var proposal *proposalMsg
+	go p.awaitProposal(proposalMsgs)
 	go schedTimeoutPropose(timeoutPropose)
-	for {
-		select {
-		case proposal := <-proposalMsgs:
-		case <-timeoutPropose:
-			break
-		}
+	select {
+	case proposalR := <-proposalMsgs:
+		proposal = &proposalR
+		break
+	case <-timeoutPropose:
+		break
 	}
 
 	// VOTE.
 	//////////////////////////////////////////
+
+	// 1. Vote for proposal or nil.
+	go p.voteProposal(round, proposal)
+
+	// 2. Wait for vote majority or timeout.
+	go p.awaitVotes(voteMsgs)
 	go schedTimeoutVote(timeoutVote)
-	for {
-		select {
-		case vote := <-voteMsgs:
-			votes = append(votes, vote)
-			if majority == len(votes) {
-				break
-			}
-		case <-timeoutVote:
-			break
-		}
+	select {
+	case v := <-preparedValueChan:
+		preparedValue = v
+	case <-timeoutVote:
+		break
 	}
 
-	// PRECOMMIT.
+	// COMMIT.
 	//////////////////////////////////////////
+
+	// 1. Commit to value.
+	go p.commitProposal(round, preparedValue)
+
+	// 2. Wait for commit majority or timeout.
+	go p.awaitCommitMajority(commitMajorityCh)
 	go schedTimeoutCommit(timeoutCommit)
-	for {
-		select {
-		case precommit := <-precommitMsgs:
-			precommits = append(precommits, precommit)
-			if majority == len(votes) {
-				break
-			}
-		case <-timeoutCommit:
-			break
-		}
+	select {
+	case <-commitMajorityCh:
+		// New height.
+		// if valid(v) then
+		// 	decisionp [hp] = v
+		// 	hp←hp+1
+		// 	reset lockedRoundp , lockedValuep , validRoundp and validValuep to initial values and empty message log
+		// 	StartRound(0)
+	case <-timeoutCommit:
+		// New round.
+		break
 	}
 }
 

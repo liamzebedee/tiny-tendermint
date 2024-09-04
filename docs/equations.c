@@ -31,7 +31,7 @@ Safety and Liveness: The conditions (lockedRoundp ≤ vr ∨ lockedValuep = v) e
 Valid Check: The valid(v) condition ensures that only valid proposals are considered, maintaining the integrity of the consensus process.
 
 upon ⟨PROPOSAL, hp, roundp, v, vr⟩ from proposer(hp, roundp) AND 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ while stepp = propose∧(vr ≥ 0∧vr < roundp) do
-	if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedV aluep = v) then 
+	if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then 
 		broadcast ⟨PREVOTE, hp, roundp, id(v)⟩
 	else
 		broadcast ⟨PREVOTE, hp, roundp, nil⟩
@@ -66,7 +66,7 @@ upon 2f + 1 ⟨PRECOMMIT, hp, roundp, ∗⟩ for the first time do
 /*
 upon ⟨PROPOSAL, hp, r, v, ∗⟩ from proposer(hp, r) AND 2f + 1 ⟨PRECOMMIT, hp, r, id(v)⟩ while decisionp[hp] = nil do
 	if valid(v) then
-		decisionp [hp ] = v
+		decisionp [hp] = v
 		hp←hp+1
 		reset lockedRoundp , lockedValuep , validRoundp and validValuep to initial values and empty message log
 		StartRound(0)
