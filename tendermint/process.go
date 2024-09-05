@@ -21,9 +21,11 @@ type Process struct {
 	// the current state of the internal Tendermint state machine
 	step int
 
-	// the most recent value (with respect to a round number) for which a commit message has been sent
+	// the most recent value (with respect to a round number) for which a commit message has been sent.
+	// the validator locks the value mutex whenever they send a commit message
 	lockedValue int
 	// the last round in which the process sent a commit message that is not nil
+
 	lockedRound int
 
 	validValue *int

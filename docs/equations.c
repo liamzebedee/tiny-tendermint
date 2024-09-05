@@ -22,14 +22,6 @@ upon ⟨PROPOSAL, hp, roundp, v, −1⟩ from proposer(hp, roundp) while stepp =
 		broadcast ⟨PREVOTE, hp, roundp, nil⟩ 
 	stepp ← prevote
 
-// Handles votes for proposals from previous rounds that 
-// validRound: This refers to the round in which a quorum of validators (2f + 1) has already PREVOTED for the value v.
-// Current Round (roundp): This is the round the node is currently participating in. It represents the ongoing phase of the consensus process.
-// Rationale:
-Flexibility with Earlier Rounds: By considering a PROPOSAL with a valid round vr < roundp, Tendermint allows nodes to remain flexible and possibly relock on a value that had significant support in an earlier round. This is crucial in asynchronous or partially synchronous environments where messages might be delayed.
-Safety and Liveness: The conditions (lockedRoundp ≤ vr ∨ lockedValuep = v) ensure that the node either relocks on the value v if it was already considering it, or if it was locked on a round earlier than vr. This preserves safety (no conflicting values get locked) while also promoting liveness (the consensus process can continue progressing).
-Valid Check: The valid(v) condition ensures that only valid proposals are considered, maintaining the integrity of the consensus process.
-
 upon ⟨PROPOSAL, hp, roundp, v, vr⟩ from proposer(hp, roundp) AND 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ while stepp = propose∧(vr ≥ 0∧vr < roundp) do
 	if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then 
 		broadcast ⟨PREVOTE, hp, roundp, id(v)⟩

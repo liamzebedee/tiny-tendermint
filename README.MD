@@ -17,6 +17,12 @@ A tiny (sub 500 LOC) implementation of the Tendermint consensus algorithm for BF
    - [ ] Vote timeout.
    - [ ] Commit timeout.
 
+## Usage.
+
+```
+go test ./... -count=1 -v -run Test
+```
+
 ## Readings.
 
  - https://arxiv.org/pdf/1807.04938

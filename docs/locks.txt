@@ -1,0 +1,12 @@
+Prevote-the-Lock: a validator must pre-vote for the block they are locked on, and propose it if they are the proposer. This prevents validators from pre-committing one block in one round, and then contributing to a polka for a different block in the next round, thereby compromising safety.
+
+Unlock-on-Polka: a validator may only release a lock after seeing a polka at a round greater than that at which it locked. This allows validators to unlock if they pre-committed something the rest of the network doesn’t want to commit, thereby protecting liveness, but does it in a way that does not compromise safety, by only allowing unlocking if there has been a polka in a round after that in which the validator became locked.
+
+
+// Handles votes for proposals from previous rounds that 
+// validRound: This refers to the round in which a quorum of validators (2f + 1) has already PREVOTED for the value v.
+// Current Round (roundp): This is the round the node is currently participating in. It represents the ongoing phase of the consensus process.
+// Rationale:
+Flexibility with Earlier Rounds: By considering a PROPOSAL with a valid round vr < roundp, Tendermint allows nodes to remain flexible and possibly relock on a value that had significant support in an earlier round. This is crucial in asynchronous or partially synchronous environments where messages might be delayed.
+Safety and Liveness: The conditions (lockedRoundp ≤ vr ∨ lockedValuep = v) ensure that the node either relocks on the value v if it was already considering it, or if it was locked on a round earlier than vr. This preserves safety (no conflicting values get locked) while also promoting liveness (the consensus process can continue progressing).
+Valid Check: The valid(v) condition ensures that only valid proposals are considered, maintaining the integrity of the consensus process.
